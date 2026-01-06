@@ -8,6 +8,7 @@ const WeakDepCache = Dict{Function, Tuple{Vararg{Symbol}}}
 export WeakDepMissingError,
     WeakDepCache,
     register_method_error_hint,
+    register_weakdep_cache,
     @declare_struct_is_in_extension,
     @declare_method_is_in_extension
 
@@ -46,6 +47,21 @@ function _extract_symbol(ex)
         return ex.args[1]
     end
     return nothing
+end
+
+
+
+"""
+    register_weakdep_cache(cache::Dict{Function,Tuple{Vararg{Symbol}}})
+
+Register the error hint cache for MethodError (in __init__()).
+"""
+function register_weakdep_cache(cache::Dict{Function,Tuple{Vararg{Symbol}}})
+    if isdefined(Base.Experimental, :register_error_hint)
+        Base.Experimental.register_error_hint(MethodError) do io, exc, argtypes, kwargs
+            method_error_hint_callback(cache,io,exc,argtypes,kwargs)
+        end
+    end
 end
 
 """
