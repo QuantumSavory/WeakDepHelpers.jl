@@ -15,6 +15,11 @@ using WeakDepHelpers
 
 const WEAKDEP_METHOD_ERROR_HINTS = WeakDepCache()
 
+function __init__()
+  register_weakdep_cache(WEAKDEP_METHOD_ERROR_HINTS)
+  #Other things you might want to do during init of a module.
+end
+
 @declare_struct_is_in_extension MyPkg FancyType :MyPkgFancyExt (:FancyDep,) "Implemented in an extension requiring FancyDep.jl."
 
 @declare_method_is_in_extension WEAKDEP_METHOD_ERROR_HINTS fancy_function (:FancyDep,) "Implemented in an extension requiring FancyDep.jl."

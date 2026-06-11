@@ -1,6 +1,6 @@
 name = "WeakDepHelpers"
 uuid = "7869a13a-7328-4bcf-a489-0f4bb64497c7"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Stefan Krastanov <stefan@krastanov.org>"]
 
 [deps]
