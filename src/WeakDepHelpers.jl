@@ -12,6 +12,12 @@ export WeakDepMissingError,
     @declare_struct_is_in_extension,
     @declare_method_is_in_extension
 
+"""
+    WeakDepMissingError(name, deps)
+
+Exception thrown when `name` is implemented by an extension that has not been loaded yet.
+`deps` is a tuple of package names that should be installed and imported before retrying.
+"""
 struct WeakDepMissingError <: Exception
     name::Symbol
     deps::Tuple{Vararg{Symbol}}
@@ -24,6 +30,12 @@ function Base.showerror(io::IO, e::WeakDepMissingError)
     print(io, styled"{info:`$(hl_name)` depends on the package(s) `$(hl_deps)` but you have not installed or imported them yet. Immediately after an `$(hl_import_deps)`, `$(hl_name)` will be available.}")
 end
 
+"""
+    register_method_error_hint(cache, f, deps)
+
+Register that method errors for function `f` should show a weak-dependency hint listing `deps`.
+The registered function is returned so callers can use this in function setup expressions.
+"""
 function register_method_error_hint(cache::WeakDepCache, f::Function, deps::Tuple{Vararg{Symbol}})
     cache[f] = deps
     return f

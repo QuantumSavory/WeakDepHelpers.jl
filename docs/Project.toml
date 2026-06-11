@@ -1,0 +1,7 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+WeakDepHelpers = "7869a13a-7328-4bcf-a489-0f4bb64497c7"
+
+[compat]
+Documenter = "1"
+
