@@ -10,6 +10,16 @@ using WeakDepHelpers
     @test occursin("import FancyDep", msg)
 end
 
+@testset "plain-text fallback message" begin
+    err = WeakDepMissingError(:fancy_method, (:FancyDepA, :FancyDepB))
+    msg = sprint(showerror, err)
+    @test occursin("fancy_method", msg)
+    @test occursin("FancyDepA, FancyDepB", msg)
+    @test occursin("import FancyDepA, FancyDepB", msg)
+    @test occursin("depends on the package(s)", msg)
+    @test occursin("will be available", msg)
+end
+
 @testset "register_method_error_hint" begin
     cache = WeakDepCache()
 
