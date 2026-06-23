@@ -30,6 +30,24 @@ end
     @test cache[f] == (:FancyDep,)
 end
 
+@testset "method error hint is shown after register_weakdep_cache" begin
+    cache = WeakDepCache()
+    function needs_dep end
+    cache[needs_dep] = (:SomeDep,)
+    register_weakdep_cache(cache)
+
+    err = try
+        needs_dep()
+    catch e
+        e
+    end
+    @test err isa MethodError
+    msg = sprint(showerror, err)
+    @test occursin("HINT", msg)
+    @test occursin("SomeDep", msg)
+    @test occursin("import SomeDep", msg)
+end
+
 module MethodFixture
 using WeakDepHelpers
 
