@@ -1,17 +1,17 @@
 module WeakDepHelpers
-
+ 
 const WeakDepCache = Dict{Function, Tuple{Vararg{Symbol}}}
-
+ 
 export WeakDepMissingError,
     WeakDepCache,
     register_method_error_hint,
     register_weakdep_cache,
     @declare_struct_is_in_extension,
     @declare_method_is_in_extension
-
+ 
 """
     WeakDepMissingError(name, deps)
-
+ 
 Exception thrown when `name` is implemented by an extension that has not been loaded yet.
 `deps` is a tuple of package names that should be installed and imported before retrying.
 """
@@ -19,28 +19,24 @@ struct WeakDepMissingError <: Exception
     name::Symbol
     deps::Tuple{Vararg{Symbol}}
 end
-
-# The syntax-highlighted rendering of the message lives in `WeakDepHelpersStyledStringsExt`,
-# which is only loadable when `StyledStrings` and `JuliaSyntaxHighlighting` are available
-# (Julia >= 1.12). When the extension is not loaded (e.g. Julia 1.10/1.11) we fall back to a
-# plain-text message with the same wording.
-_styled_ext() = Base.get_extension(@__MODULE__, :WeakDepHelpersStyledStringsExt)
-
+ 
+# No-op fallback. The `WeakDepHelpersJuliaSyntaxHighlightingExt` extension adds a method that
+# syntax-highlights the identifiers when `JuliaSyntaxHighlighting` is available (Julia >= 1.12).
+# Keeping this as a no-op lets WeakDepHelpers load on Julia 1.10/1.11 with a plain-text message.
+highlight(x::Any) = x
+ 
 function Base.showerror(io::IO, e::WeakDepMissingError)
-    ext = _styled_ext()
-    if ext === nothing
-        name = string(e.name)
-        print(io, "`", name, "` depends on the package(s) `", join(string.(e.deps), ", "),
-              "` but you have not installed or imported them yet. Immediately after an `",
-              string("import ", join(e.deps, ", ")), "`, `", name, "` will be available.")
-    else
-        ext.styled_showerror(io, e)
-    end
+    hl_name = highlight(string(e.name))
+    hl_deps = highlight(join(string.(e.deps), ", "))
+    hl_import_deps = highlight(string("import ", join(e.deps, ", ")))
+    print(io, "`", hl_name, "` depends on the package(s) `", hl_deps,
+          "` but you have not installed or imported them yet. Immediately after an `",
+          hl_import_deps, "`, `", hl_name, "` will be available.")
 end
-
+ 
 """
     register_method_error_hint(cache, f, deps)
-
+ 
 Register that method errors for function `f` should show a weak-dependency hint listing `deps`.
 The registered function is returned so callers can use this in function setup expressions.
 """
@@ -48,17 +44,16 @@ function register_method_error_hint(cache::WeakDepCache, f::Function, deps::Tupl
     cache[f] = deps
     return f
 end
-
+ 
 function method_error_hint_callback(cache::WeakDepCache, io, exc, argtypes, kwargs)
     deps = get(cache, exc.f, nothing)
     if deps !== nothing
-        ext = _styled_ext()
-        ext === nothing ? print(io, "\nHINT: ") : ext.styled_hint_prefix(io)
+        print(io, "\nHINT: ")
         showerror(io, WeakDepMissingError(nameof(exc.f), deps))
     end
     return nothing
 end
-
+ 
 function _extract_symbol(ex)
     if ex isa Symbol
         return ex
@@ -69,12 +64,12 @@ function _extract_symbol(ex)
     end
     return nothing
 end
-
-
-
+ 
+ 
+ 
 """
     register_weakdep_cache(cache::Dict{Function,Tuple{Vararg{Symbol}}})
-
+ 
 Register the error hint cache for MethodError (in __init__()).
 """
 function register_weakdep_cache(cache::Dict{Function,Tuple{Vararg{Symbol}}})
@@ -84,10 +79,10 @@ function register_weakdep_cache(cache::Dict{Function,Tuple{Vararg{Symbol}}})
         end
     end
 end
-
+ 
 """
     @declare_struct_is_in_extension parent_mod struct_name extension_name deps [docstring]
-
+ 
 Declare a forwarding "constructor function" named `struct_name` in the calling module that
 dispatches to `Base.get_extension(parent_mod, extension_name).struct_name(...)` if the extension is
 loaded, and otherwise throws `WeakDepMissingError(struct_name, deps)`.
@@ -96,16 +91,16 @@ macro declare_struct_is_in_extension(args...)
     length(args) in (4, 5) || error("Usage: @declare_struct_is_in_extension parent_mod struct_name extension_name deps [docstring]")
     parent_mod, struct_name, extension_name, deps = args[1:4]
     docstring = length(args) == 5 ? args[5] : nothing
-
+ 
     struct_sym = _extract_symbol(struct_name)
     struct_sym === nothing && error("`struct_name` must be an identifier or Symbol literal")
-
+ 
     ext_arg = extension_name isa Symbol ? QuoteNode(extension_name) : esc(extension_name)
-
+ 
     struct_id = esc(struct_sym)
     parent_ex = esc(parent_mod)
     deps_ex = esc(deps)
-
+ 
     forward_def = :(function $struct_id(args...; kwargs...)
         ext = Base.get_extension($parent_ex, $ext_arg)
         if isnothing(ext)
@@ -113,18 +108,18 @@ macro declare_struct_is_in_extension(args...)
         end
         return getfield(ext, $(QuoteNode(struct_sym)))(args...; kwargs...)
     end)
-
+ 
     if docstring === nothing
         return forward_def
     end
-
+ 
     doc_attach = esc(:(@doc $docstring $struct_sym))
     return Expr(:block, forward_def, doc_attach)
 end
-
+ 
 """
-    @declare_method_is_in_extension cache function_name deps [docstring]
-
+    @declare_method_is_in_extension cache function_name deps [docstring] 
+    
 Declare an unimplemented generic function named `function_name` in the calling module and register an
 error hint in `cache` so that a `MethodError` will display an extension/weakdep loading hint via
 `method_error_hint_callback(cache, ...)`.
