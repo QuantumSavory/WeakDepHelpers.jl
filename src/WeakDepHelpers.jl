@@ -1,5 +1,8 @@
 module WeakDepHelpers
 
+using JuliaSyntaxHighlighting: highlight
+using StyledStrings: @styled_str
+
 const WeakDepCache = Dict{Function, Tuple{Vararg{Symbol}}}
 
 export WeakDepMissingError,
@@ -21,9 +24,10 @@ struct WeakDepMissingError <: Exception
 end
 
 function Base.showerror(io::IO, e::WeakDepMissingError)
-    name = string(e.name)
-    deps = join(string.(e.deps), ", ")
-    print(io, "`$(name)` depends on the package(s) `$(deps)` but you have not installed or imported them yet. Immediately after an `import $(deps)`, `$(name)` will be available.")
+    hl_name = highlight(string(e.name))
+    hl_deps = highlight(join(string.(e.deps), ", "))
+    hl_import_deps = highlight(string("import ", join(e.deps, ", ")))
+    print(io, styled"{info:`$(hl_name)` depends on the package(s) `$(hl_deps)` but you have not installed or imported them yet. Immediately after an `$(hl_import_deps)`, `$(hl_name)` will be available.}")
 end
 
 """
@@ -40,7 +44,7 @@ end
 function method_error_hint_callback(cache::WeakDepCache, io, exc, argtypes, kwargs)
     deps = get(cache, exc.f, nothing)
     if deps !== nothing
-        print(io, "\nHINT: ")
+        print(io, styled"\n{bold:{info:HINT: }}")
         showerror(io, WeakDepMissingError(nameof(exc.f), deps))
     end
     return nothing
