@@ -6,7 +6,9 @@ using WeakDepHelpers
     expected = "`FancyType` depends on the package(s) `FancyDep` but you have not installed or imported them yet. Immediately after an `import FancyDep`, `FancyType` will be available."
 
     @test sprint(showerror, err) == expected
-    @test sprint(showerror, err; context=:color => true) == expected
+    colored = sprint(showerror, err; context=:color => true)
+    @test occursin("\e[96m`FancyType`", colored)
+    @test occursin("\e[31mimport\e[96m FancyDep", colored)
 end
 
 @testset "register_method_error_hint" begin
@@ -33,6 +35,8 @@ end
 
     @test err isa MethodError
     @test occursin("\nHINT: `needs_dep` depends on the package(s) `SomeDep`", sprint(showerror, err))
+    colored = sprint(showerror, err; context=:color => true)
+    @test occursin("\e[96m\e[1mHINT: ", colored)
 end
 
 module MethodFixture
