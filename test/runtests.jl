@@ -3,11 +3,10 @@ using WeakDepHelpers
 
 @testset "WeakDepMissingError" begin
     err = WeakDepMissingError(:FancyType, (:FancyDep,))
-    msg = sprint(showerror, err)
+    expected = "`FancyType` depends on the package(s) `FancyDep` but you have not installed or imported them yet. Immediately after an `import FancyDep`, `FancyType` will be available."
 
-    @test occursin("FancyType", msg)
-    @test occursin("FancyDep", msg)
-    @test occursin("import FancyDep", msg)
+    @test sprint(showerror, err) == expected
+    @test sprint(showerror, err; context=:color => true) == expected
 end
 
 @testset "register_method_error_hint" begin
@@ -18,6 +17,22 @@ end
 
     @test register_method_error_hint(cache, f, (:FancyDep,)) === f
     @test cache[f] == (:FancyDep,)
+end
+
+@testset "registered method error hint" begin
+    cache = WeakDepCache()
+    function needs_dep end
+    register_method_error_hint(cache, needs_dep, (:SomeDep,))
+    register_weakdep_cache(cache)
+
+    err = try
+        needs_dep()
+    catch err
+        err
+    end
+
+    @test err isa MethodError
+    @test occursin("\nHINT: `needs_dep` depends on the package(s) `SomeDep`", sprint(showerror, err))
 end
 
 module MethodFixture
