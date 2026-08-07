@@ -1,6 +1,6 @@
 # News
 
-## v0.1.3 - unreleased
+## v0.1.3 - 2026-08-07
 
 - Restore styled weak-dependency errors and Julia syntax highlighting. This requires
   Julia 1.12 or later; users of older Julia versions can remain on v0.1.2 with
